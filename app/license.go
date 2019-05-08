@@ -18,8 +18,8 @@ func (a *App) LoadLicense() {
 	a.SetLicense(nil)
 
 	licenseId := ""
-	if result := <-a.Srv.Store.System().Get(); result.Err == nil {
-		props := result.Data.(model.StringMap)
+	props, err := a.Srv.Store.System().Get()
+	if err == nil {
 		licenseId = props[model.SYSTEM_ACTIVE_LICENSE_ID]
 	}
 
@@ -84,9 +84,7 @@ func (a *App) SaveLicense(licenseBytes []byte) (*model.License, *model.AppError)
 	sysVar := &model.System{}
 	sysVar.Name = model.SYSTEM_ACTIVE_LICENSE_ID
 	sysVar.Value = license.Id
-	schan := a.Srv.Store.System().SaveOrUpdate(sysVar)
-
-	if result := <-schan; result.Err != nil {
+	if err := a.Srv.Store.System().SaveOrUpdate(sysVar); err != nil {
 		a.RemoveLicense()
 		return nil, model.NewAppError("addLicense", "api.license.add_license.save_active.app_error", nil, "", http.StatusInternalServerError)
 	}
@@ -162,8 +160,8 @@ func (a *App) RemoveLicense() *model.AppError {
 	sysVar.Name = model.SYSTEM_ACTIVE_LICENSE_ID
 	sysVar.Value = ""
 
-	if result := <-a.Srv.Store.System().SaveOrUpdate(sysVar); result.Err != nil {
-		return result.Err
+	if err := a.Srv.Store.System().SaveOrUpdate(sysVar); err != nil {
+		return err
 	}
 
 	a.SetLicense(nil)
